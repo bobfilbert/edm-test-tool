@@ -1,1 +1,81 @@
+import csv
+from faker import Faker
+import random
+from datetime import datetime, timedelta
+import multiprocessing as mp
+
+# Initialize Faker
+fake = Faker('en_US')
+
+# Function to generate a chunk of data
+def generate_chunk(chunk_size):
+    chunk = []
+    for _ in range(chunk_size):
+        chunk.append([
+            fake.name(),
+            fake.date_of_birth(minimum_age=18, maximum_age=90).strftime("%Y-%m-%d"),
+            fake.ssn(),
+            fake.email(),
+            fake.phone_number(),
+            fake.street_address(),
+            fake.city(),
+            fake.state(),
+            fake.zipcode(),
+            fake.job(),
+            fake.company(),
+            fake.credit_card_number(),
+            fake.credit_card_expire(),
+            fake.credit_card_security_code(),
+            fake.ipv4(),
+            fake.user_name(),
+            fake.password(length=12),
+            fake.url(),
+            fake.color_name(),
+            fake.language_name(),
+            fake.timezone(),
+            fake.isbn13(),
+            fake.currency_code(),
+            str(round(random.uniform(20000, 150000), 2)),
+            (datetime.now() - timedelta(days=random.randint(1, 3650))).strftime("%Y-%m-%d %H:%M:%S")
+        ])
+    return chunk
+
+# Column headers
+headers = [
+    "Full Name", "Date of Birth", "SSN", "Email", "Phone", "Street Address", "City", "State", "Zip Code",
+    "Job Title", "Company", "Credit Card Number", "Credit Card Expiry", "Credit Card CVV",
+    "IP Address", "Username", "Password", "Website", "Favorite Color", "Language",
+    "Time Zone", "ISBN", "Currency", "Annual Income", "Account Creation Date"
+]
+
+# Main function to generate and write data
+def generate_data(total_rows, output_file):
+    chunk_size = 100000
+    num_processes = mp.cpu_count()
+
+    print(f"Starting to generate {total_rows} rows of data using {num_processes} processes...")
+    start_time = datetime.now()
+
+    with open(output_file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(headers)
+
+        rows_written = 0
+        with mp.Pool(processes=num_processes) as pool:
+            for chunk in pool.imap_unordered(generate_chunk, [chunk_size] * (total_rows // chunk_size)):
+                writer.writerows(chunk)
+                rows_written += len(chunk)
+                if rows_written % 100000 == 0:
+                    elapsed_time = datetime.now() - start_time
+                    print(f"Generated {rows_written} rows... Time elapsed: {elapsed_time}")
+
+    end_time = datetime.now()
+    total_time = end_time - start_time
+    print(f"Data generation complete. Total time taken: {total_time}")
+    print(f"Data written to {output_file}")
+
+if __name__ == '__main__':
+    output_file = 'large_personal_data.csv'
+    total_rows = 20_000_000
+    generate_data(total_rows, output_file)
 
